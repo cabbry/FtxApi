@@ -6,6 +6,8 @@
 
         public string ApiSecret { get; }
 
+        public string SubAccount { get; }
+
         public Client()
         {
             ApiKey = "";
@@ -16,6 +18,13 @@
         {
             ApiKey = apiKey;
             ApiSecret = apiSecret;
+        }
+
+        public Client(string apiKey, string apiSecret, string subAccount)
+        {
+            ApiKey = apiKey;
+            ApiSecret = apiSecret;
+            SubAccount = subAccount;
         }
 
     }
