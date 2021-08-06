@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
@@ -18,7 +19,7 @@ namespace FtxApi
         private readonly HMACSHA256 _hashMaker;
 
         private long _nonce;
-      
+
         public FtxRestApi(Client client)
         {
             _client = client;
@@ -121,7 +122,7 @@ namespace FtxApi
 
             return ParseResponce(result);
         }
-        
+
         public async Task<dynamic> GetMarketTradesAsync(string marketName, int limit, DateTime start, DateTime end)
         {
             var resultString = $"api/markets/{marketName}/trades?limit={limit}&start_time={Util.Util.GetSecondsFromEpochStart(start)}&end_time={Util.Util.GetSecondsFromEpochStart(end)}";
@@ -134,7 +135,7 @@ namespace FtxApi
         #endregion
 
         #region Account
-        
+
         public async Task<dynamic> GetAccountInfoAsync()
         {
             var resultString = $"api/account";
@@ -159,7 +160,7 @@ namespace FtxApi
         public async Task<dynamic> ChangeAccountLeverageAsync(int leverage)
         {
             var resultString = $"api/account/leverage";
-         
+
             var body = $"{{\"leverage\": {leverage}}}";
 
             var sign = GenerateSignature(HttpMethod.Post, "/api/account/leverage", body);
@@ -176,7 +177,7 @@ namespace FtxApi
         public async Task<dynamic> GetCoinAsync()
         {
             var resultString = $"api/wallet/coins";
-           
+
             var sign = GenerateSignature(HttpMethod.Get, "/api/wallet/coins", "");
 
             var result = await CallAsyncSign(HttpMethod.Get, resultString, sign);
@@ -198,7 +199,7 @@ namespace FtxApi
         public async Task<dynamic> GetDepositAddressAsync(string coin)
         {
             var resultString = $"api/wallet/deposit_address/{coin}";
-            
+
             var sign = GenerateSignature(HttpMethod.Get, $"/api/wallet/deposit_address/{coin}", "");
 
             var result = await CallAsyncSign(HttpMethod.Get, resultString, sign);
@@ -232,12 +233,12 @@ namespace FtxApi
         {
             var resultString = $"api/wallet/withdrawals";
 
-            var body = $"{{"+
+            var body = $"{{" +
                 $"\"coin\": \"{coin}\"," +
-                $"\"size\": {size},"+
-                $"\"address\": \"{addr}\","+
-                $"\"tag\": {tag},"+
-                $"\"password\": \"{pass}\","+
+                $"\"size\": {size}," +
+                $"\"address\": \"{addr}\"," +
+                $"\"tag\": {tag}," +
+                $"\"password\": \"{pass}\"," +
                 $"\"code\": {code}" +
                 "}";
 
@@ -252,17 +253,21 @@ namespace FtxApi
 
         #region Orders
 
-        public async Task<dynamic> PlaceOrderAsync(string instrument, SideType side, decimal price, OrderType orderType, decimal amount, bool reduceOnly = false)
+        public async Task<dynamic> PlaceOrderAsync(string instrument, SideType side, decimal? price, OrderType orderType, decimal amount, bool reduceOnly = false, bool ioc = false, bool postOnly = false, string clientId = "null")
         {
             var path = $"api/orders";
 
             var body =
                 $"{{\"market\": \"{instrument}\"," +
                 $"\"side\": \"{side.ToString()}\"," +
-                $"\"price\": {price}," +
+                $"\"price\": {(price.HasValue ? price.Value.ToString(CultureInfo.InvariantCulture.NumberFormat) : "null")}," +
                 $"\"type\": \"{orderType.ToString()}\"," +
-                $"\"size\": {amount}," +
-                $"\"reduceOnly\": {reduceOnly.ToString().ToLower()}}}";
+                $"\"size\": {amount.ToString(CultureInfo.InvariantCulture.NumberFormat)}," +
+                $"\"reduceOnly\": {reduceOnly.ToString().ToLower()}," +
+                $"\"ioc\": {ioc.ToString().ToLower()}," +
+                $"\"postOnly\": {postOnly.ToString().ToLower()}," +
+                $"\"clientId\": {clientId}" +
+                $"}}";
 
             var sign = GenerateSignature(HttpMethod.Post, "/api/orders", body);
             var result = await CallAsyncSign(HttpMethod.Post, path, sign, body);
@@ -329,7 +334,7 @@ namespace FtxApi
             var path = $"api/orders?market={instrument}";
 
             var sign = GenerateSignature(HttpMethod.Get, $"/api/orders?market={instrument}", "");
-           
+
             var result = await CallAsyncSign(HttpMethod.Get, path, sign);
 
             return ParseResponce(result);
@@ -386,7 +391,7 @@ namespace FtxApi
             var body =
                 $"{{\"market\": \"{instrument}\"}}";
 
-                var sign = GenerateSignature(HttpMethod.Delete, $"/api/orders", body);
+            var sign = GenerateSignature(HttpMethod.Delete, $"/api/orders", body);
 
             var result = await CallAsyncSign(HttpMethod.Delete, resultString, sign, body);
 
@@ -470,7 +475,7 @@ namespace FtxApi
         public async Task<dynamic> RequestLeveragedTokenCreationAsync(string tokenName, decimal size)
         {
             var resultString = $"api/lt/{tokenName}/create";
-          
+
             var body = $"{{\"size\": {size}}}";
 
             var sign = GenerateSignature(HttpMethod.Post, $"/api/lt/{tokenName}/create", body);
@@ -559,9 +564,9 @@ namespace FtxApi
             return Util.Util.GetMillisecondsFromEpochStart();
         }
 
-        private dynamic ParseResponce(string responce)
+        private dynamic ParseResponce(string response)
         {
-            return (dynamic)responce;
+            return (dynamic)response;
         }
 
 
